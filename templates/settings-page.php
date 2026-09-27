@@ -1,12 +1,13 @@
 <?php
 /**
- * Template: Settings > URL Blocker page.
+ * Template: Settings > PathGuard Redirects page.
  *
- * Variables made available by urlb_render_settings_page():
+ * Variables made available by AdminSettings::render_settings_page():
  *   string $blocked_urls   Newline-separated list of blocked relative paths.
  *   string $redirect_type  'custom' = 302 to a URL, '404' = serve the WP 404 template.
  *   string $redirect_url   Destination URL when redirect_type is 'custom'.
  *   string $exclude_admins '1' = admins are exempt, '0' = admins are blocked too.
+ *   bool   $redirect_loop  True if the destination URL is itself a blocked path.
  *
  * @package URLBlocker
  */
@@ -19,6 +20,12 @@ defined( 'ABSPATH' ) || exit;
 	<?php if ( '1' === filter_input( INPUT_GET, 'updated', FILTER_SANITIZE_NUMBER_INT ) ) : ?>
 		<div class="notice notice-success is-dismissible">
 			<p><?php esc_html_e( 'Settings saved.', 'pathguard-redirects' ); ?></p>
+		</div>
+	<?php endif; ?>
+
+	<?php if ( $redirect_loop ) : ?>
+		<div class="notice notice-warning">
+			<p><?php esc_html_e( 'The redirect destination is itself a blocked URL. Blocked visitors will be shown the 404 page instead until you change it.', 'pathguard-redirects' ); ?></p>
 		</div>
 	<?php endif; ?>
 
@@ -45,7 +52,7 @@ defined( 'ABSPATH' ) || exit;
 /private/"
 					><?php echo esc_textarea( $blocked_urls ); ?></textarea>
 					<p class="description">
-						<?php esc_html_e( 'Enter one relative URL per line (e.g. /secret-page/). The path is matched exactly, with or without a trailing slash.', 'pathguard-redirects' ); ?>
+						<?php esc_html_e( 'Enter one path per line, relative to your site home (e.g. /secret-page/). Full URLs are converted to paths on save. Matching ignores case, a trailing slash, and query strings.', 'pathguard-redirects' ); ?>
 					</p>
 				</td>
 			</tr>
@@ -79,15 +86,15 @@ defined( 'ABSPATH' ) || exit;
 				</th>
 				<td>
 					<input
-						type="url"
+						type="text"
 						id="urlb_redirect_url"
 						name="urlb_redirect_url"
 						value="<?php echo esc_attr( $redirect_url ); ?>"
 						class="regular-text"
-						placeholder="https://example.com or /home"
+						placeholder="https://example.com/ or /home/"
 					/>
 					<p class="description">
-						<?php esc_html_e( 'Visitors will be sent here with a 302 redirect. Only used when "Custom URL" is selected above.', 'pathguard-redirects' ); ?>
+						<?php esc_html_e( 'Visitors will be sent here with a 302 redirect. Use a full URL (any domain) or a path relative to your site home. Leave empty to show the 404 page. Only used when "Custom URL" is selected above.', 'pathguard-redirects' ); ?>
 					</p>
 				</td>
 			</tr>
@@ -116,16 +123,3 @@ defined( 'ABSPATH' ) || exit;
 	</form>
 </div>
 
-<script>
-( function () {
-	var select    = document.getElementById( 'urlb_redirect_type' );
-	var customRow = document.getElementById( 'urlb_custom_url_row' );
-
-	function toggleCustomRow() {
-		customRow.style.display = ( 'custom' === select.value ) ? '' : 'none';
-	}
-
-	select.addEventListener( 'change', toggleCustomRow );
-	toggleCustomRow();
-}() );
-</script>
